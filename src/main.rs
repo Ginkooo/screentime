@@ -4,11 +4,7 @@ use tiny_http::{Response, Server};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 
 use chrono::{DateTime, TimeZone, Utc};
-use jsonrpc_http_server::{
-    hyper::http::Error,
-    jsonrpc_core::{serde_json::json, IoHandler, Value},
-    ServerBuilder,
-};
+
 use rdev::{listen, Event};
 use sqlite::{Connection, State};
 
@@ -96,7 +92,7 @@ fn run_deamon(connection: Connection, receiver: DaemonEnd) {
         let request = receiver.api_req_receiver.try_recv();
 
         if request.is_ok() {
-            let request = request.unwrap();
+            let _request = request.unwrap();
             let last_dt = get_most_recent_screentime(&connection);
             let diff = now - last_dt.datetime;
             receiver
@@ -141,7 +137,7 @@ fn run_api(api_end: ApiEnd) {
     }
 }
 
-fn input_callback(event: Event, sender: InputEventEnd) {
+fn input_callback(_event: Event, sender: InputEventEnd) {
     sender
         .input_events
         .send(Message::Input(InputEvent::Unknown))
