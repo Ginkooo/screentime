@@ -1,7 +1,7 @@
 use chrono::{DateTime, TimeZone, Utc};
 use sqlite::{Connection, State};
 
-use crate::structs::{DaemonEnd, Entry, EntryEvent, InputEvent, Message};
+use crate::structs::{DaemonEnd, Entry, EntryEvent, Message};
 
 const CREATE_TABLE_STATEMENT: &str =
     "CREATE TABLE IF NOT EXISTS screentime (timestamp INTEGER, event_type INTEGER)";

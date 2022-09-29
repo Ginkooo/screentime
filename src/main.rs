@@ -3,12 +3,12 @@ mod structs;
 use structs::{ApiEnd, DaemonEnd, InputEvent, InputEventEnd, Message};
 use tiny_http::{Response, Server};
 
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{unbounded};
 
-use chrono::{DateTime, Duration, TimeZone, Utc};
+
 
 use rdev::{listen, Event};
-use sqlite::{Connection, State};
+use sqlite::{Connection};
 
 fn run_api(api_end: ApiEnd) {
     let server = Server::http("127.0.0.1:9898").unwrap();
