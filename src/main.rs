@@ -5,7 +5,7 @@ mod structs;
 use api::Api;
 use daemon::Daemon;
 use input_event::InputEventListener;
-use structs::{ApiEnd, DaemonEnd, InputEvent, InputEventEnd, Message};
+use structs::{ApiEnd, DaemonEnd, InputEventEnd};
 
 use crossbeam::channel::unbounded;
 
@@ -40,7 +40,7 @@ fn main() {
         },
     );
 
-    let mut input_event_listener = InputEventListener::new(InputEventEnd {
+    let input_event_listener = InputEventListener::new(InputEventEnd {
         input_events: input_events_sender,
     });
 
