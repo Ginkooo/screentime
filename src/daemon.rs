@@ -36,7 +36,7 @@ fn get_most_recent_screentime(connection: &Connection) -> Entry {
 
     while let State::Row = statement.next().unwrap() {
         let timestamp: i64 = statement.read(0).unwrap();
-        event_type = EntryEvent::try_from(statement.read(1).unwrap()).unwrap();
+        event_type = EntryEvent::try_from(statement.read::<i64>(1).unwrap()).unwrap();
         datetime = Utc.timestamp(timestamp, 0);
         break;
     }
@@ -57,14 +57,14 @@ fn get_oldest_screentime(connection: &Connection) -> Entry {
 
     while let State::Row = statement.next().unwrap() {
         let timestamp: i64 = statement.read(0).unwrap();
-        event_type = EntryEvent::try_from(statement.read(1).unwrap()).unwrap();
+        event_type = EntryEvent::try_from(statement.read::<i64>(1).unwrap()).unwrap();
         datetime = Utc.timestamp(timestamp, 0);
         break;
     }
 
     Entry {
         datetime,
-        event_type: InputEvent::Unknown,
+        event_type,
     }
 }
 
@@ -106,7 +106,7 @@ fn handle_api_requests(receiver: &mut DaemonEnd, connection: &Connection) {
     }
 }
 
-pub fn run_deamon(connection: Connection, receiver: DaemonEnd) {
+pub fn run_deamon(connection: Connection, mut receiver: DaemonEnd) {
     connection.execute(CREATE_TABLE_STATEMENT).unwrap();
     insert_now(&connection);
 

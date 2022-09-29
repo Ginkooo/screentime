@@ -1,5 +1,6 @@
 mod daemon;
 mod structs;
+use structs::{ApiEnd, DaemonEnd, InputEvent, InputEventEnd, Message};
 use tiny_http::{Response, Server};
 
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -9,20 +10,20 @@ use chrono::{DateTime, Duration, TimeZone, Utc};
 use rdev::{listen, Event};
 use sqlite::{Connection, State};
 
-fn run_api(api_end: structs::ApiEnd) {
+fn run_api(api_end: ApiEnd) {
     let server = Server::http("127.0.0.1:9898").unwrap();
     for request in server.incoming_requests() {
         dbg!(request.url());
         api_end
             .api_req_sender
-            .send(structs::Message::GetScreentimeReq)
+            .send(Message::GetScreentimeReq)
             .unwrap();
 
         match api_end
             .api_resp_receiver
             .recv_timeout(std::time::Duration::from_secs(120))
         {
-            Ok(structs::Message::GetScreentimeResp(secs)) => {
+            Ok(Message::GetScreentimeResp(secs)) => {
                 request
                     .respond(Response::from_string(secs.to_string()))
                     .unwrap();
@@ -32,14 +33,14 @@ fn run_api(api_end: structs::ApiEnd) {
     }
 }
 
-fn input_callback(_event: Event, sender: structs::InputEventEnd) {
+fn input_callback(_event: Event, sender: InputEventEnd) {
     sender
         .input_events
-        .send(structs::Message::Input(structs::InputEvent::Unknown))
+        .send(Message::Input(InputEvent::Unknown))
         .unwrap();
 }
 
-fn run_event_listener(sender: structs::InputEventEnd) {
+fn run_event_listener(sender: InputEventEnd) {
     listen(move |event| {
         input_callback(event, sender.clone());
     })
@@ -64,7 +65,7 @@ fn main() {
         scope.spawn(|| {
             daemon::run_deamon(
                 connection,
-                structs::DaemonEnd {
+                DaemonEnd {
                     input_events: input_events_receiver,
                     api_resp_sender,
                     api_req_receiver,
@@ -72,13 +73,13 @@ fn main() {
             )
         });
         scope.spawn(|| {
-            run_api(structs::ApiEnd {
+            run_api(ApiEnd {
                 api_resp_receiver,
                 api_req_sender,
             })
         });
         scope.spawn(|| {
-            run_event_listener(structs::InputEventEnd {
+            run_event_listener(InputEventEnd {
                 input_events: input_events_sender,
             })
         });

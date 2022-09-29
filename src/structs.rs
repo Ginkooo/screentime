@@ -5,6 +5,7 @@ pub enum InputEvent {
     Unknown,
 }
 
+#[derive(PartialEq)]
 pub enum EntryEvent {
     Activity,
     Afk,
@@ -13,7 +14,7 @@ pub enum EntryEvent {
 impl TryFrom<i64> for EntryEvent {
     type Error = ();
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(EntryEvent::Activity),
             2 => Ok(EntryEvent::Afk),
@@ -23,7 +24,7 @@ impl TryFrom<i64> for EntryEvent {
 }
 
 impl Into<i64> for EntryEvent {
-    fn into(self) -> i32 {
+    fn into(self) -> i64 {
         match self {
             Self::Activity => 1,
             Self::Afk => 2,
@@ -57,5 +58,3 @@ pub struct ApiEnd {
     pub api_req_sender: Sender<Message>,
     pub api_resp_receiver: Receiver<Message>,
 }
-
-impl Try
