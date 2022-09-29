@@ -1,51 +1,15 @@
+mod api;
 mod daemon;
+mod input_event;
 mod structs;
+use api::Api;
+use daemon::Daemon;
+use input_event::InputEventListener;
 use structs::{ApiEnd, DaemonEnd, InputEvent, InputEventEnd, Message};
-use tiny_http::{Response, Server};
 
-use crossbeam::channel::{unbounded};
+use crossbeam::channel::unbounded;
 
-
-
-use rdev::{listen, Event};
-use sqlite::{Connection};
-
-fn run_api(api_end: ApiEnd) {
-    let server = Server::http("127.0.0.1:9898").unwrap();
-    for request in server.incoming_requests() {
-        dbg!(request.url());
-        api_end
-            .api_req_sender
-            .send(Message::GetScreentimeReq)
-            .unwrap();
-
-        match api_end
-            .api_resp_receiver
-            .recv_timeout(std::time::Duration::from_secs(120))
-        {
-            Ok(Message::GetScreentimeResp(secs)) => {
-                request
-                    .respond(Response::from_string(secs.to_string()))
-                    .unwrap();
-            }
-            _ => {}
-        };
-    }
-}
-
-fn input_callback(_event: Event, sender: InputEventEnd) {
-    sender
-        .input_events
-        .send(Message::Input(InputEvent::Unknown))
-        .unwrap();
-}
-
-fn run_event_listener(sender: InputEventEnd) {
-    listen(move |event| {
-        input_callback(event, sender.clone());
-    })
-    .ok();
-}
+use sqlite::Connection;
 
 fn initialize_db() -> Connection {
     let mut cache_dir = dirs::cache_dir().unwrap();
@@ -61,28 +25,29 @@ fn main() {
     let (input_events_sender, input_events_receiver) = unbounded();
     let (api_req_sender, api_req_receiver) = unbounded();
     let (api_resp_sender, api_resp_receiver) = unbounded();
-    std::thread::scope(move |scope| {
-        scope.spawn(|| {
-            daemon::run_deamon(
-                connection,
-                DaemonEnd {
-                    input_events: input_events_receiver,
-                    api_resp_sender,
-                    api_req_receiver,
-                },
-            )
-        });
-        scope.spawn(|| {
-            run_api(ApiEnd {
-                api_resp_receiver,
-                api_req_sender,
-            })
-        });
-        scope.spawn(|| {
-            run_event_listener(InputEventEnd {
-                input_events: input_events_sender,
-            })
-        });
+
+    let api = Api::new(ApiEnd {
+        api_resp_receiver,
+        api_req_sender,
+    });
+
+    let mut daemon = Daemon::new(
+        connection,
+        DaemonEnd {
+            input_events: input_events_receiver,
+            api_resp_sender,
+            api_req_receiver,
+        },
+    );
+
+    let mut input_event_listener = InputEventListener::new(InputEventEnd {
+        input_events: input_events_sender,
+    });
+
+    std::thread::scope(|scope| {
+        scope.spawn(move || daemon.run());
+        scope.spawn(move || api.run());
+        scope.spawn(|| input_event_listener.run());
     });
 }
 
