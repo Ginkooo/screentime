@@ -20,17 +20,14 @@ impl Api {
                 .send(Message::GetScreentimeReq)
                 .unwrap();
 
-            match self
+            if let Ok(Message::GetScreentimeResp(secs)) = self
                 .api_end
                 .api_resp_receiver
                 .recv_timeout(std::time::Duration::from_secs(120))
             {
-                Ok(Message::GetScreentimeResp(secs)) => {
-                    request
-                        .respond(Response::from_string(secs.to_string()))
-                        .unwrap();
-                }
-                _ => {}
+                request
+                    .respond(Response::from_string(secs.to_string()))
+                    .unwrap();
             };
         }
     }

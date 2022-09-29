@@ -5,29 +5,19 @@ pub enum InputEvent {
     Unknown,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum EntryEvent {
     Activity,
     Afk,
+    Unknown,
 }
 
-impl TryFrom<i64> for EntryEvent {
-    type Error = ();
-
-    fn try_from(value: i64) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(EntryEvent::Activity),
-            2 => Ok(EntryEvent::Afk),
-            _ => Err(()),
-        }
-    }
-}
-
-impl Into<i64> for EntryEvent {
-    fn into(self) -> i64 {
-        match self {
-            Self::Activity => 1,
-            Self::Afk => 2,
+impl From<i64> for EntryEvent {
+    fn from(num: i64) -> Self {
+        match num {
+            1 => EntryEvent::Activity,
+            2 => EntryEvent::Afk,
+            _ => EntryEvent::Unknown,
         }
     }
 }

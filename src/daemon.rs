@@ -43,8 +43,8 @@ impl Daemon {
     fn handle_api_requests(&mut self) {
         let request = self.daemon_end.api_req_receiver.try_recv();
 
-        if request.is_ok() {
-            let _request = request.unwrap();
+        if let Ok(request) = request {
+            let _request = request;
             let last_dt = self.get_oldest_screentime();
             let diff = self.now - last_dt.datetime;
             self.daemon_end
