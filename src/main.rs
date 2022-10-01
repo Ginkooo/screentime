@@ -40,7 +40,7 @@ fn create_current_day_snapshot_file() -> File {
         .create(true)
         .open(path)
         .expect("could not open current day file");
-    file.write(&[0]).unwrap();
+    file.write_all(&[0]).unwrap();
     file
 }
 
