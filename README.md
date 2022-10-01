@@ -10,6 +10,7 @@ A minimal screentime deamon
 
 # Features:
 
+- [x] Linux, Windows and MacOS
 - [x] Messure total screentime
 - [x] AFK feature
 - [ ] Configurable
