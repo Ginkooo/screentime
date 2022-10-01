@@ -5,8 +5,8 @@ A minimal screentime deamon
 `cargo install`
 
 # Usage:
-
-Make a `GET` request to `http://127.0.0.1` and it will respond you with your today's screentime
+1. Run `screentime`
+2. Make a `GET` request to `http://127.0.0.1` and it will respond you with your today's screentime
 
 # Features:
 
