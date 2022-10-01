@@ -1,8 +1,7 @@
-use chrono::{DateTime, Local, Timelike, Utc};
+use chrono::{DateTime, Local};
 use rdev::listen;
 use std::{
-    ascii::AsciiExt,
-    fs::{File, OpenOptions},
+    fs::{File},
     io::Write,
     path::PathBuf,
     sync::{Arc, RwLock},
