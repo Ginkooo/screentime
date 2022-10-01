@@ -1,73 +1,74 @@
-mod api;
-mod daemon;
-mod input_event;
-mod structs;
-use api::Api;
-use daemon::Daemon;
-use input_event::InputEventListener;
-use structs::{ApiEnd, DaemonEnd, InputEventEnd};
+use chrono::{DateTime, Local, Timelike, Utc};
+use rdev::listen;
+use std::{
+    ascii::AsciiExt,
+    fs::OpenOptions,
+    io::Write,
+    path::PathBuf,
+    sync::{Arc, RwLock},
+};
+use tiny_http::{Response, Server};
 
-use crossbeam::channel::unbounded;
-
-use sqlite::Connection;
-
-fn initialize_db() -> Connection {
-    let mut cache_dir = dirs::cache_dir().unwrap();
-    cache_dir.push("screentime");
-    std::fs::create_dir_all(&cache_dir).unwrap();
-    let mut sqlite_path = cache_dir.clone();
-    sqlite_path.push("db.sqlite");
-    sqlite::open(sqlite_path).unwrap()
+fn write_usage_time_to_file(value: u64, path: &PathBuf) {
+    std::fs::write(path, &value.to_string().into_bytes()[..]).unwrap();
 }
 
 fn main() {
-    let connection = initialize_db();
-    let (input_events_sender, input_events_receiver) = unbounded();
-    let (api_req_sender, api_req_receiver) = unbounded();
-    let (api_resp_sender, api_resp_receiver) = unbounded();
+    let mut snapshot_file_path = dirs::cache_dir().unwrap();
+    snapshot_file_path.push("screentime.txt");
 
-    let api = Api::new(ApiEnd {
-        api_resp_receiver,
-        api_req_sender,
-    });
+    let bytes = std::fs::read(&snapshot_file_path);
+    let mut usage_time = 0u64;
+    match bytes {
+        Ok(bytes) => {
+            usage_time = String::from_utf8(bytes)
+                .unwrap_or("0".to_string())
+                .parse()
+                .unwrap()
+        }
+        Err(_) => {}
+    }
 
-    let mut daemon = Daemon::new(
-        connection,
-        DaemonEnd {
-            input_events: input_events_receiver,
-            api_resp_sender,
-            api_req_receiver,
-        },
-    );
-
-    let input_event_listener = InputEventListener::new(InputEventEnd {
-        input_events: input_events_sender,
-    });
+    let usage_time = Arc::new(RwLock::new(usage_time));
+    let last_input_time = Arc::new(RwLock::new(Local::now()));
+    let last_input_time_clone1 = last_input_time.clone();
+    let last_input_time_clone2 = last_input_time.clone();
+    let usage_time_clone_1 = usage_time.clone();
 
     std::thread::scope(|scope| {
-        scope.spawn(move || daemon.run());
-        scope.spawn(move || api.run());
-        scope.spawn(|| input_event_listener.run());
-    });
-}
-
-#[cfg(test)]
-mod tests {
-    
-
-    #[test]
-    fn test_works() {
-        std::thread::spawn(|| {
-            super::main();
+        scope.spawn(move || loop {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            let last_it = last_input_time_clone1.read().unwrap();
+            let mut value = usage_time_clone_1.write().unwrap();
+            let now = Local::now();
+            let is_midnight = now.hour() == 0 && now.minute() == 0 && now.second() == 0;
+            if is_midnight {
+                *value = 0;
+            }
+            if (Local::now() - *last_it).num_seconds() > 5 {
+                write_usage_time_to_file(*value, &snapshot_file_path);
+                continue;
+            }
+            *value += 1;
+            if *value % 5 == 0 {
+                write_usage_time_to_file(*value, &snapshot_file_path);
+            }
         });
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        let client = reqwest::blocking::Client::new();
-        let resp = client
-            .post("http://127.0.0.1:9898/get_screentime/")
-            .send()
+        scope.spawn(|| {
+            let server = Server::http("127.0.0.1:9898").unwrap();
+            for request in server.incoming_requests() {
+                let value = usage_time.read().unwrap();
+                let string = value.to_string();
+                request.respond(Response::from_string(string)).unwrap();
+            }
+        });
+        scope.spawn(|| {
+            listen(move |_| {
+                let last = &last_input_time_clone2;
+                let mut value = last.write().unwrap();
+                *value = Local::now();
+            })
             .unwrap();
-        let resp = resp.text().unwrap();
-        dbg!(resp);
-    }
+        });
+    });
 }
