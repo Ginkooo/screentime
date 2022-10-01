@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use rdev::listen;
 use std::{
-    fs::{File},
+    fs::File,
     io::Write,
     path::PathBuf,
     sync::{Arc, RwLock},
@@ -94,14 +94,11 @@ fn main() {
 
     let bytes = std::fs::read(&snapshot_file_path);
     let mut usage_time = 0u64;
-    match bytes {
-        Ok(bytes) => {
-            usage_time = String::from_utf8(bytes)
-                .unwrap_or("0".to_string())
-                .parse()
-                .unwrap()
-        }
-        Err(_) => {}
+    if let Ok(bytes) = bytes {
+        usage_time = String::from_utf8(bytes)
+            .unwrap_or_else(|_| "0".to_string())
+            .parse()
+            .unwrap()
     }
 
     let usage_time = Arc::new(RwLock::new(usage_time));
