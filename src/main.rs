@@ -53,7 +53,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use reqwest;
+    
 
     #[test]
     fn test_works() {

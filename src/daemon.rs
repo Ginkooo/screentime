@@ -61,7 +61,7 @@ impl Daemon {
             return;
         }
 
-        if self.get_most_recent_screentime().event_type == EntryEvent::Activity {
+        if self.get_most_recent_screentime().event_type == EntryEvent::Afk {
             return;
         }
 
@@ -88,8 +88,6 @@ impl Daemon {
             let event = self.daemon_end.input_events.try_recv();
 
             self.handle_api_requests();
-
-            self.insert_afk_if_needed();
 
             match event {
                 Err(_) => (),
