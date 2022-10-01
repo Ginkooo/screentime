@@ -13,6 +13,9 @@ fn write_usage_time_to_file(value: u64, path: &PathBuf) {
     std::fs::write(path, &value.to_string().into_bytes()[..]).unwrap();
 }
 
+const SECONDS_BEFORE_AFK: u32 = 30;
+const SNAPSHOT_INTERVAL_IN_SECONDS: u32 = 10;
+
 fn main() {
     let mut snapshot_file_path = dirs::cache_dir().unwrap();
     snapshot_file_path.push("screentime.txt");
@@ -45,12 +48,12 @@ fn main() {
             if is_midnight {
                 *value = 0;
             }
-            if (Local::now() - *last_it).num_seconds() > 5 {
+            if (Local::now() - *last_it).num_seconds() > SECONDS_BEFORE_AFK.into() {
                 write_usage_time_to_file(*value, &snapshot_file_path);
                 continue;
             }
             *value += 1;
-            if *value % 5 == 0 {
+            if *value % SNAPSHOT_INTERVAL_IN_SECONDS as u64 == 0 {
                 write_usage_time_to_file(*value, &snapshot_file_path);
             }
         });
