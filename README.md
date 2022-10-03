@@ -1,10 +1,10 @@
 A minimal screentime deamon
 
-## Install:
-# Arch:
+# Install:
+## Arch:
 `yay screentime` (or other AUR manager)
 
-# Locally:
+## Locally:
 `cargo install`
 
 ## Usage:
