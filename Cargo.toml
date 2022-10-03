@@ -8,6 +8,7 @@ keywords = ["utility", "command-line-tool", "screentime"]
 categories = ["command-line-utilities"]
 description = "A lightweight screentime monitoring tool"
 repository = "https://github.com/Ginkooo/screentime"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
