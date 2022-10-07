@@ -8,8 +8,8 @@ A minimal screentime deamon
 `cargo install`
 
 # Usage:
-1. Run `screentime`
-2. Make a `GET` request to `http://127.0.0.1:9898` and it will respond you with your today's screentime
+1. Run `screentime` in background to run the daemon
+2. `screentime get` will show you the total screentime in seconds
 
 # Config:
 

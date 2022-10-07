@@ -616,6 +616,7 @@ dependencies = [
  "dirs",
  "rdev",
  "tiny_http",
+ "tinyget",
 ]
 
 [[package]]
@@ -732,6 +733,12 @@ dependencies = [
  "time 0.3.14",
  "url",
 ]
+
+[[package]]
+name = "tinyget"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb0d8b7e0e50b97386327d8d736605b2a352eebe7f8aed72f5172a04e3754e87"
 
 [[package]]
 name = "tinyvec"

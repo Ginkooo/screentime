@@ -16,6 +16,13 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
+use tinyget;
+
+fn print_current_time(config: &Config) {
+    let url = format!("http://127.0.0.1:{}", config.get_int(PORT).unwrap());
+    let resp = tinyget::get(url).send().unwrap();
+    println!("{}", resp.as_str().unwrap());
+}
 
 fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
     listen(move |_| {
@@ -42,6 +49,11 @@ fn main() {
         .unwrap()
         .build()
         .unwrap();
+    let arg_list = std::env::args().skip(1).collect::<Vec<String>>();
+    if arg_list.len() == 1 {
+        print_current_time(&config);
+        return;
+    }
 
     utils::create_cache_dir();
     let snapshot_file_path = utils::get_current_day_snapshot_file_path();
