@@ -11,9 +11,7 @@ use consts::{
 };
 use rdev::listen;
 use std::{
-    fs::File,
     io::Write,
-    path::PathBuf,
     sync::{Arc, RwLock},
 };
 use tinyget;

@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    consts::{self, SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS},
+    consts::{SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS},
     utils,
 };
 use chrono::{DateTime, Local};
