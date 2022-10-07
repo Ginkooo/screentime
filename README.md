@@ -27,7 +27,7 @@ Variables:
 ## Features:
 
 - [x] Linux, Windows and MacOS
-- [x] Messure total screentime
+- [x] Measure total screentime
 - [x] AFK feature
 - [x] Configurable
 - [x] Simple client in a binary
