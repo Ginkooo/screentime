@@ -1,4 +1,4 @@
-A minimal screentime deamon
+A screentime monitoring tool, shows how much time are you really using a PC
 
 # Install:
 ## Arch:
