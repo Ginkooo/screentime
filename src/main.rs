@@ -12,10 +12,23 @@ use consts::{
 use rdev::listen;
 use std::sync::{Arc, RwLock};
 
-fn print_current_time(config: &Config) {
+fn handle_client_mode(option: &str, config: &Config) {
     let url = format!("http://127.0.0.1:{}", config.get_int(PORT).unwrap());
     let resp = tinyget::get(url).send().unwrap();
-    println!("{}", resp.as_str().unwrap());
+    let seconds: u64 = resp.as_str().unwrap().parse().unwrap();
+    let to_print = match option {
+        "hms" => {
+            let hours = seconds / 3600;
+            let seconds = seconds % 3600;
+            let minutes = seconds / 60;
+            let seconds = seconds % 60;
+
+            format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
+        }
+        _ => seconds.to_string(),
+    };
+
+    print!("{}", to_print);
 }
 
 fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
@@ -45,7 +58,8 @@ fn main() {
         .unwrap();
     let arg_list = std::env::args().skip(1);
     if arg_list.len() == 1 {
-        print_current_time(&config);
+        let option = &arg_list.collect::<Vec<String>>()[0];
+        handle_client_mode(option, &config);
         return;
     }
 

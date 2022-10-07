@@ -9,7 +9,9 @@ A minimal screentime deamon
 
 # Usage:
 1. Run `screentime` in background to run the daemon
-2. `screentime get` will show you the total screentime in seconds
+2.
+ a. `screentime get` will show you the total screentime in seconds
+ b. `screentime hms` will show you the total screentime in HH:MM:SS format
 
 # Config:
 
