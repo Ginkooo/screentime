@@ -1,4 +1,4 @@
-A screentime monitoring tool, shows how much time are you really using a PC
+A screentime monitoring tool, shows how much time are you really using a PC. It work nicely with i3status or py3status on I3 window manager for example :)
 
 # Install:
 ## Arch:
