@@ -30,4 +30,4 @@ Variables:
 - [x] Messure total screentime
 - [x] AFK feature
 - [x] Configurable
-- [ ] Simple client in a binary
+- [x] Simple client in a binary
