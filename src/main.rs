@@ -10,11 +10,7 @@ use consts::{
     SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS,
 };
 use rdev::listen;
-use std::{
-    io::Write,
-    sync::{Arc, RwLock},
-};
-use tinyget;
+use std::sync::{Arc, RwLock};
 
 fn print_current_time(config: &Config) {
     let url = format!("http://127.0.0.1:{}", config.get_int(PORT).unwrap());
@@ -47,7 +43,7 @@ fn main() {
         .unwrap()
         .build()
         .unwrap();
-    let arg_list = std::env::args().skip(1).collect::<Vec<String>>();
+    let arg_list = std::env::args().skip(1);
     if arg_list.len() == 1 {
         print_current_time(&config);
         return;
