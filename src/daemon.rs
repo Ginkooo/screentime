@@ -5,8 +5,22 @@ use crate::{
     types::ThreadSafeUsageTime,
     utils,
 };
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Timelike};
 use config::Config;
+#[derive(Debug)]
+
+struct ActiveWindow {
+    _title: String,
+    process_name: String,
+}
+
+fn get_active_window() -> ActiveWindow {
+    let window = active_win_pos_rs::get_active_window().unwrap();
+    ActiveWindow {
+        _title: window.title.to_lowercase(),
+        process_name: window.process_name.to_lowercase(),
+    }
+}
 
 pub fn run_usage_time_updater(
     usage_time: ThreadSafeUsageTime,
@@ -14,6 +28,8 @@ pub fn run_usage_time_updater(
     config: &Config,
 ) {
     loop {
+        let active_window = get_active_window();
+
         std::thread::sleep(std::time::Duration::from_secs(1));
         let last_it = last_input_time.read().unwrap();
         let mut value = usage_time.write().unwrap();
@@ -28,10 +44,9 @@ pub fn run_usage_time_updater(
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
             continue;
         }
-        *value.get_mut("unknown").unwrap() += 1;
-        if *value.get("unknown").unwrap() % config.get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS).unwrap()
-            == 0
-        {
+        *value.entry(active_window.process_name).or_insert(0) += 1;
+
+        if last_it.second() as u64 % config.get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS).unwrap() == 0 {
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
         }
     }
