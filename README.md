@@ -1,5 +1,7 @@
 A screentime monitoring tool, shows how much time are you really using certain apps. It work nicely with i3status or py3status on I3 window manager for example :)
 
+![Screenshot](imgs/summary.png)
+
 # Install:
 ## Arch:
 `yay screentime` (or other AUR manager)
