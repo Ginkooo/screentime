@@ -2,6 +2,8 @@ use std::{fs::File, io::Write, path::PathBuf};
 
 use chrono::Local;
 
+use crate::types::UsageTime;
+
 pub fn get_current_day_snapshot_file_path() -> PathBuf {
     let mut path = get_cache_dir_file_path();
     let today_date_str = Local::now().date_naive().to_string();
@@ -51,6 +53,7 @@ pub fn create_current_day_snapshot_file() -> File {
     file
 }
 
-pub fn write_usage_time_to_file(value: u64, path: &PathBuf) {
-    std::fs::write(path, &value.to_string().into_bytes()[..]).unwrap();
+pub fn write_usage_time_to_file(value: &UsageTime, path: &PathBuf) {
+    let bytes = serde_json::to_vec_pretty(&value).unwrap();
+    std::fs::write(path, bytes).unwrap();
 }
