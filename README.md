@@ -32,10 +32,15 @@ Variables:
 It just maintains a counter HashMap updated every second by one thread. Other thread has an HTTP API for the client to access the usage time. It uses only cross-platform libraries, so it should work on all three popular OSes.
 
 
-## Features:
+# Features:
 
 - [x] Linux, Windows and MacOS
 - [x] Measure total screentime
 - [x] AFK feature
 - [x] Configurable
 - [x] Simple client in a binary
+
+
+# Contributing:
+
+Feel free to open an issue, or just make a pull request. If you see any improvements to make the code better in any way, open a PR. I'd be happy to welcome new contributors :)
