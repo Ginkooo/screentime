@@ -1,6 +1,8 @@
 mod api;
+mod client;
 mod consts;
 mod daemon;
+mod types;
 mod utils;
 
 use chrono::{DateTime, Local};
@@ -10,26 +12,11 @@ use consts::{
     SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS,
 };
 use rdev::listen;
-use std::sync::{Arc, RwLock};
-
-fn handle_client_mode(option: &str, config: &Config) {
-    let url = format!("http://127.0.0.1:{}", config.get_int(PORT).unwrap());
-    let resp = tinyget::get(url).send().unwrap();
-    let seconds: u64 = resp.as_str().unwrap().parse().unwrap();
-    let to_print = match option {
-        "hms" => {
-            let hours = seconds / 3600;
-            let seconds = seconds % 3600;
-            let minutes = seconds / 60;
-            let seconds = seconds % 60;
-
-            format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
-        }
-        _ => seconds.to_string(),
-    };
-
-    print!("{}", to_print);
-}
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
+use types::{ThreadSafeUsageTime, UsageTime};
 
 fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
     listen(move |_| {
@@ -40,8 +27,8 @@ fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
     .unwrap();
 }
 
-fn main() {
-    let config = Config::builder()
+fn build_config() -> Config {
+    Config::builder()
         .add_source(config::File::with_name(
             utils::get_created_config_file_path().to_str().unwrap(),
         ))
@@ -55,11 +42,16 @@ fn main() {
         .set_default(SECONDS_BEFORE_AFK, DEFAULT_SECONDS_BEFORE_AFK)
         .unwrap()
         .build()
-        .unwrap();
+        .unwrap()
+}
+
+fn main() {
+    let config = build_config();
+
     let arg_list = std::env::args().skip(1);
     if arg_list.len() == 1 {
         let option = &arg_list.collect::<Vec<String>>()[0];
-        handle_client_mode(option, &config);
+        client::handle_client_mode(option, &config);
         return;
     }
 
@@ -67,15 +59,21 @@ fn main() {
     let snapshot_file_path = utils::get_current_day_snapshot_file_path();
 
     let bytes = std::fs::read(&snapshot_file_path);
-    let mut usage_time = 0u64;
+    let mut usage_time = UsageTime::new();
+    usage_time.insert(String::from("unknown"), 0u64);
+
     if let Ok(bytes) = bytes {
-        usage_time = String::from_utf8(bytes)
-            .unwrap_or_else(|_| "0".to_string())
-            .parse()
-            .unwrap()
+        let dupa = String::from_utf8(bytes).expect("corrupted screentime file");
+        match serde_json::from_str(dupa.as_str()) {
+            Ok(value) => usage_time = value,
+            Err(_) => {
+                usage_time = UsageTime::new();
+                usage_time.insert("unknown".to_string(), 0);
+            }
+        }
     }
 
-    let usage_time = Arc::new(RwLock::new(usage_time));
+    let usage_time: ThreadSafeUsageTime = Arc::new(RwLock::new(usage_time));
     let last_input_time = Arc::new(RwLock::new(Local::now()));
     let last_input_time_clone1 = last_input_time.clone();
     let usage_time_clone_1 = usage_time.clone();
