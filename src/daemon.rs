@@ -14,11 +14,14 @@ struct ActiveWindow {
     process_name: String,
 }
 
-fn get_active_window() -> ActiveWindow {
-    let window = active_win_pos_rs::get_active_window().unwrap();
-    ActiveWindow {
-        _title: window.title.to_lowercase(),
-        process_name: window.process_name.to_lowercase(),
+fn get_active_window() -> Option<ActiveWindow> {
+    let window = active_win_pos_rs::get_active_window();
+    match window {
+        Ok(window) => Some(ActiveWindow {
+            _title: window.title.to_lowercase(),
+            process_name: window.process_name.to_lowercase(),
+        }),
+        Err(_) => None,
     }
 }
 
@@ -28,7 +31,10 @@ pub fn run_usage_time_updater(
     config: &Config,
 ) {
     loop {
-        let active_window = get_active_window();
+        let active_window = get_active_window().unwrap_or(ActiveWindow {
+            _title: String::from("unknown"),
+            process_name: String::from("unknown"),
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
         let last_it = last_input_time.read().unwrap();
