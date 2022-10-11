@@ -3,10 +3,17 @@ A screentime monitoring tool, shows how much time are you really using certain a
 ![Screenshot](imgs/summary.png)
 
 # Install:
+
+## From crates.io:
+
+`cargo install screentime`
+
 ## Arch:
+
 `yay screentime` (or other AUR manager)
 
 ## Locally:
+
 `cargo install`
 
 # Usage:
