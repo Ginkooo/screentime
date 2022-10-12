@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    consts::{SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS},
+    consts::{DESKTOP, SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS},
     types::ThreadSafeUsageTime,
     utils,
 };
@@ -30,29 +30,41 @@ pub fn run_usage_time_updater(
     last_input_time: Arc<RwLock<DateTime<Local>>>,
     config: &Config,
 ) {
+    let mut last_iteration_time = Local::now();
     loop {
+        let time_diff_from_last_iteration_in_seconds =
+            (Local::now() - last_iteration_time).num_seconds();
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        if time_diff_from_last_iteration_in_seconds < 1 {
+            continue;
+        }
+        last_iteration_time = Local::now();
         let active_window = get_active_window().unwrap_or(ActiveWindow {
-            _title: String::from("unknown"),
-            process_name: String::from("unknown"),
+            _title: DESKTOP.clone().to_string(),
+            process_name: DESKTOP.clone().to_string(),
         });
 
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        let last_it = last_input_time.read().unwrap();
+        let last_input_time = last_input_time.read().unwrap();
         let mut value = usage_time.write().unwrap();
 
         let current_day_snapshot_file_path = utils::get_current_day_snapshot_file_path();
         if !current_day_snapshot_file_path.exists() {
-            *value.get_mut("unknown").unwrap() = 0;
             utils::create_current_day_snapshot_file();
         }
 
-        if (Local::now() - *last_it).num_seconds() > config.get_int(SECONDS_BEFORE_AFK).unwrap() {
+        if (Local::now() - *last_input_time).num_seconds()
+            > config.get_int(SECONDS_BEFORE_AFK).unwrap()
+        {
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
             continue;
         }
-        *value.entry(active_window.process_name).or_insert(0) += 1;
+        *value.entry(active_window.process_name).or_insert(0) +=
+            time_diff_from_last_iteration_in_seconds as u64;
 
-        if last_it.second() as u64 % config.get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS).unwrap() == 0 {
+        if last_input_time.second() as u64
+            % config.get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS).unwrap()
+            == 0
+        {
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
         }
     }

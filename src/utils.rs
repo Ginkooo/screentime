@@ -49,7 +49,12 @@ pub fn create_current_day_snapshot_file() -> File {
         .create(true)
         .open(path)
         .expect("could not open current day file");
-    file.write_all(&[0]).unwrap();
+    file.write_all(
+        serde_json::to_string_pretty(&UsageTime::new())
+            .unwrap()
+            .as_bytes(),
+    )
+    .unwrap();
     file
 }
 

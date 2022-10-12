@@ -60,7 +60,6 @@ fn main() {
 
     let bytes = std::fs::read(&snapshot_file_path);
     let mut usage_time = UsageTime::new();
-    usage_time.insert(String::from("unknown"), 0u64);
 
     if let Ok(bytes) = bytes {
         let dupa = String::from_utf8(bytes).expect("corrupted screentime file");
@@ -68,7 +67,6 @@ fn main() {
             Ok(value) => usage_time = value,
             Err(_) => {
                 usage_time = UsageTime::new();
-                usage_time.insert("unknown".to_string(), 0);
             }
         }
     }
