@@ -31,6 +31,8 @@ pub fn run_usage_time_updater(
     config: &Config,
 ) {
     loop {
+        let last_iteration_at = Local::now();
+
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         let active_window = get_active_window().unwrap_or(ActiveWindow {
@@ -54,7 +56,10 @@ pub fn run_usage_time_updater(
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
             continue;
         }
-        *value.entry(active_window.process_name).or_insert(0) += 1u64;
+
+        let second_passed_since_last_update = (Local::now() - last_iteration_at).num_seconds();
+        *value.entry(active_window.process_name).or_insert(0) +=
+            second_passed_since_last_update as u64;
 
         if last_input_time.second() as u64
             % config
