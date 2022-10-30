@@ -13,18 +13,23 @@ use consts::{
 };
 use rdev::listen;
 use std::{
-    collections::HashMap,
     sync::{Arc, RwLock},
+    time::Duration,
 };
 use types::{ThreadSafeUsageTime, UsageTime};
 
 fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
-    listen(move |_| {
-        let last = &last_input_time;
-        let mut value = last.write().unwrap();
-        *value = Local::now();
-    })
-    .unwrap();
+    loop {
+        let last_input_time_clone = last_input_time.clone();
+        if let Err(err) = listen(move |_| {
+            let last = &last_input_time_clone;
+            let mut value = last.write().unwrap();
+            *value = Local::now();
+        }) {
+            eprintln!("{:?}. Retry in a sec...", err);
+            std::thread::sleep(Duration::from_secs(1));
+        }
+    }
 }
 
 fn build_config() -> Config {

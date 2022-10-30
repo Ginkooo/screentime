@@ -41,7 +41,7 @@ pub fn get_created_config_file_path() -> PathBuf {
     path
 }
 
-pub fn create_current_day_snapshot_file() -> File {
+pub fn create_current_day_snapshot_file() -> Result<File, Box<dyn std::error::Error>> {
     let path = get_current_day_snapshot_file_path();
     let mut file = std::fs::OpenOptions::new()
         .read(true)
@@ -49,16 +49,11 @@ pub fn create_current_day_snapshot_file() -> File {
         .create(true)
         .open(path)
         .expect("could not open current day file");
-    file.write_all(
-        serde_json::to_string_pretty(&UsageTime::new())
-            .unwrap()
-            .as_bytes(),
-    )
-    .unwrap();
-    file
+    file.write_all(serde_json::to_string_pretty(&UsageTime::new())?.as_bytes())?;
+    Ok(file)
 }
 
 pub fn write_usage_time_to_file(value: &UsageTime, path: &PathBuf) {
-    let bytes = serde_json::to_vec_pretty(&value).unwrap();
+    let bytes = serde_json::to_string_pretty(&value).unwrap();
     std::fs::write(path, bytes).unwrap();
 }

@@ -30,15 +30,9 @@ pub fn run_usage_time_updater(
     last_input_time: Arc<RwLock<DateTime<Local>>>,
     config: &Config,
 ) {
-    let mut last_iteration_time = Local::now();
     loop {
-        let time_diff_from_last_iteration_in_seconds =
-            (Local::now() - last_iteration_time).num_seconds();
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        if time_diff_from_last_iteration_in_seconds < 1 {
-            continue;
-        }
-        last_iteration_time = Local::now();
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
         let active_window = get_active_window().unwrap_or(ActiveWindow {
             _title: DESKTOP.clone().to_string(),
             process_name: DESKTOP.clone().to_string(),
@@ -49,20 +43,23 @@ pub fn run_usage_time_updater(
 
         let current_day_snapshot_file_path = utils::get_current_day_snapshot_file_path();
         if !current_day_snapshot_file_path.exists() {
-            utils::create_current_day_snapshot_file();
+            utils::create_current_day_snapshot_file().expect("snapshot file must be created");
         }
 
         if (Local::now() - *last_input_time).num_seconds()
-            > config.get_int(SECONDS_BEFORE_AFK).unwrap()
+            > config
+                .get_int(SECONDS_BEFORE_AFK)
+                .expect("should never return an error, as there is a default value for it")
         {
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
             continue;
         }
-        *value.entry(active_window.process_name).or_insert(0) +=
-            time_diff_from_last_iteration_in_seconds as u64;
+        *value.entry(active_window.process_name).or_insert(0) += 1u64;
 
         if last_input_time.second() as u64
-            % config.get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS).unwrap()
+            % config
+                .get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS)
+                .expect("should never fail, as there is a default value for it")
             == 0
         {
             utils::write_usage_time_to_file(&*value, &utils::get_current_day_snapshot_file_path());
