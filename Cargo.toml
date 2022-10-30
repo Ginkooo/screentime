@@ -1,6 +1,6 @@
 [package]
 name = "screentime"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 authors = ["Piotr Czajka <czajka@protonmail.com>"]
 license= "MIT"
