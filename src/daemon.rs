@@ -3,10 +3,9 @@ use std::sync::{Arc, RwLock};
 use crate::{
     consts::{DESKTOP, SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS},
     types::ThreadSafeUsageTime,
-    utils,
+    utils, ScreentimeConfig,
 };
 use chrono::{DateTime, Local, Timelike};
-use config::Config;
 #[derive(Debug)]
 
 struct ActiveWindow {
@@ -28,7 +27,7 @@ fn get_active_window() -> Option<ActiveWindow> {
 pub fn run_usage_time_updater(
     usage_time: ThreadSafeUsageTime,
     last_input_time: Arc<RwLock<DateTime<Local>>>,
-    config: &Config,
+    config: &ScreentimeConfig,
 ) {
     loop {
         let last_iteration_at = Local::now();
@@ -50,6 +49,7 @@ pub fn run_usage_time_updater(
 
         if (Local::now() - *last_input_time).num_seconds()
             > config
+                .config
                 .get_int(SECONDS_BEFORE_AFK)
                 .expect("should never return an error, as there is a default value for it")
         {
@@ -63,6 +63,7 @@ pub fn run_usage_time_updater(
 
         if last_input_time.second() as u64
             % config
+                .config
                 .get::<u64>(SNAPSHOT_INTERVAL_IN_SECONDS)
                 .expect("should never fail, as there is a default value for it")
             == 0

@@ -1,22 +1,45 @@
 mod api;
 mod client;
+mod config;
 mod consts;
 mod daemon;
 mod types;
 mod utils;
 
+use crate::config::ScreentimeConfig;
 use chrono::{DateTime, Local};
-use config::Config;
-use consts::{
-    DEFAULT_PORT, DEFAULT_SECONDS_BEFORE_AFK, DEFAULT_SNAPSHOT_INTERVAL_IN_SECONDS, PORT,
-    SECONDS_BEFORE_AFK, SNAPSHOT_INTERVAL_IN_SECONDS,
-};
+use clap::{Parser, Subcommand, ValueEnum};
 use rdev::listen;
 use std::{
+    path::PathBuf,
     sync::{Arc, RwLock},
     time::Duration,
 };
 use types::{ThreadSafeUsageTime, UsageTime};
+
+/// A screentime monitoring tool. Firstly, start this program with no arguments (daemon mode)
+#[derive(Parser)]
+struct Args {
+    /// Client commands
+    #[arg(value_enum)]
+    command: Option<Command>,
+
+    /// Specify a config path
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
+}
+
+#[derive(ValueEnum, Clone)]
+pub enum Command {
+    /// Print total screentime in HH:MM:SS format
+    Hms,
+    /// Print total screentime in seconds
+    Total,
+    /// Print a nice-looking summary
+    Summary,
+    /// Print a summary in raw JSON
+    RawSummary,
+}
 
 fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
     loop {
@@ -32,31 +55,16 @@ fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
     }
 }
 
-fn build_config() -> Config {
-    Config::builder()
-        .add_source(config::File::with_name(
-            utils::get_created_config_file_path().to_str().unwrap(),
-        ))
-        .set_default(PORT, DEFAULT_PORT)
-        .unwrap()
-        .set_default(
-            SNAPSHOT_INTERVAL_IN_SECONDS,
-            DEFAULT_SNAPSHOT_INTERVAL_IN_SECONDS,
-        )
-        .unwrap()
-        .set_default(SECONDS_BEFORE_AFK, DEFAULT_SECONDS_BEFORE_AFK)
-        .unwrap()
-        .build()
-        .unwrap()
-}
-
 fn main() {
-    let config = build_config();
+    let args = Args::parse();
+    let config = if let Some(config_path) = args.config {
+        ScreentimeConfig::new(config_path)
+    } else {
+        ScreentimeConfig::default()
+    };
 
-    let arg_list = std::env::args().skip(1);
-    if arg_list.len() == 1 {
-        let option = &arg_list.collect::<Vec<String>>()[0];
-        client::handle_client_mode(option, &config);
+    if let Some(command) = args.command {
+        client::handle_client_mode(command, &config);
         return;
     }
 

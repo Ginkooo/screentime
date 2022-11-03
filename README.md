@@ -17,12 +17,31 @@ A screentime monitoring tool, shows how much time are you really using certain a
 `cargo install`
 
 # Usage:
-1. Run `screentime` in background to run the daemon
- 2. Make requests
-   -  `screentime total` will show you the total screentime in seconds
-   -  `screentime hms` will show you the total screentime in HH:MM:SS format
-   -  `screentime summary` will show you the usage summary in a nice format
-   -  `screentime raw_summary` will show you the usage summary in a JSON format
+
+`screentime --help`
+
+```
+A screentime monitoring tool. Firstly, start this program with no arguments (daemon mode)
+
+Usage: screentime [OPTIONS] [COMMAND]
+
+Arguments:
+  [COMMAND]
+          Client commands
+
+          Possible values:
+          - hms:         Print total screentime in HH:MM:SS format
+          - total:       Print total screentime in seconds
+          - summary:     Print a nice-looking summary
+          - raw-summary: Print a summary in raw JSON
+
+Options:
+  -c, --config <FILE>
+          Specify a config path
+
+  -h, --help
+          Print help information (use `-h` for a summary)
+```
 
 # Config:
 

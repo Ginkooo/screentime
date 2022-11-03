@@ -4,7 +4,10 @@ use colored::{ColoredString, Colorize};
 use config::Config;
 use tiny_http::{Request, Response, Server};
 
-use crate::types::{ThreadSafeUsageTime, UsageTime};
+use crate::{
+    types::{ThreadSafeUsageTime, UsageTime},
+    ScreentimeConfig,
+};
 
 struct Responder<'a> {
     request: Request,
@@ -76,8 +79,12 @@ impl<'a> Responder<'a> {
     }
 }
 
-pub fn run_server(usage_time: ThreadSafeUsageTime, config: &Config) {
-    let server = Server::http(format!("127.0.0.1:{}", config.get_int("port").unwrap())).unwrap();
+pub fn run_server(usage_time: ThreadSafeUsageTime, config: &ScreentimeConfig) {
+    let server = Server::http(format!(
+        "127.0.0.1:{}",
+        config.config.get_int("port").unwrap()
+    ))
+    .unwrap();
     for request in server.incoming_requests() {
         let url = request
             .url()

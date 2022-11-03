@@ -21,26 +21,6 @@ pub fn create_cache_dir() {
     std::fs::create_dir_all(get_cache_dir_file_path()).unwrap();
 }
 
-pub fn get_config_dir_path() -> PathBuf {
-    let mut path = dirs::config_dir().unwrap();
-    path.push("screentime");
-    path
-}
-
-pub fn create_config_dir() {
-    std::fs::create_dir_all(get_config_dir_path()).unwrap();
-}
-
-pub fn get_created_config_file_path() -> PathBuf {
-    let mut path = get_config_dir_path();
-    create_config_dir();
-    path.push("config.toml");
-    if !path.exists() {
-        File::create(&path).unwrap();
-    }
-    path
-}
-
 pub fn create_current_day_snapshot_file() -> Result<File, Box<dyn std::error::Error>> {
     let path = get_current_day_snapshot_file_path();
     let mut file = std::fs::OpenOptions::new()
