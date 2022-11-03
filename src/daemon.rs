@@ -35,8 +35,8 @@ pub fn run_usage_time_updater(
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         let active_window = get_active_window().unwrap_or(ActiveWindow {
-            _title: DESKTOP.clone().to_string(),
-            process_name: DESKTOP.clone().to_string(),
+            _title: DESKTOP.to_string(),
+            process_name: DESKTOP.to_string(),
         });
 
         let last_input_time = last_input_time.read().unwrap();

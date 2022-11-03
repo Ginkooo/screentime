@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use colored::{Colorize};
+use colored::Colorize;
 
 use tiny_http::{Request, Response, Server};
 
@@ -17,12 +17,7 @@ struct Responder<'a> {
 
 impl<'a> Responder<'a> {
     fn total(&self) -> Vec<u8> {
-        self.value
-            .values()
-            .copied()
-            .fold(0, |a, b| a + b)
-            .to_string()
-            .into()
+        self.value.values().sum::<u64>().to_string().into()
     }
 
     fn get_hms_usage_time(&self) -> HashMap<String, String> {
@@ -60,7 +55,7 @@ impl<'a> Responder<'a> {
     }
 
     fn hms(&self) -> Vec<u8> {
-        let total_seconds = self.value.values().copied().fold(0, |a, b| a + b);
+        let total_seconds = self.value.values().sum();
         self.seconds_to_hms(total_seconds).into()
     }
 

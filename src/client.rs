@@ -2,7 +2,6 @@ use std::io::{stdout, Write};
 
 use clap::ValueEnum;
 
-
 use crate::{consts::PORT, Command, ScreentimeConfig};
 
 pub fn handle_client_mode(command: Command, config: &ScreentimeConfig) {
@@ -11,7 +10,7 @@ pub fn handle_client_mode(command: Command, config: &ScreentimeConfig) {
         .expect("it've been already parsed, so it won't error")
         .get_name()
         .to_string()
-        .replace("-", "_");
+        .replace('-', "_");
 
     let url = format!(
         "http://127.0.0.1:{}/{}",
