@@ -8,7 +8,7 @@ mod utils;
 
 use crate::config::ScreentimeConfig;
 use chrono::{DateTime, Local};
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, ValueEnum};
 use rdev::listen;
 use std::{
     path::PathBuf,

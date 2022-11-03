@@ -1,7 +1,7 @@
 use std::io::{stdout, Write};
 
 use clap::ValueEnum;
-use config::Config;
+
 
 use crate::{consts::PORT, Command, ScreentimeConfig};
 

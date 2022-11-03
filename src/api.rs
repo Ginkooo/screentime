@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use colored::{ColoredString, Colorize};
-use config::Config;
+use colored::{Colorize};
+
 use tiny_http::{Request, Response, Server};
 
 use crate::{
