@@ -1,23 +1,20 @@
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
-use dirs;
+use chrono::Local;
+
 use jammdb::DB;
-use serde::{Deserialize, Serialize};
-use serde_json;
-use std::borrow::Cow;
+
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::future::Future;
+
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::pin::Pin;
-use std::sync::{Arc, RwLock};
-use std::time::{Duration, SystemTime};
+
+use std::time::Duration;
 
 use active_win_pos_rs::get_active_window;
 use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
+use hyper::body::Bytes;
 use hyper::server::conn::http1;
-use hyper::service::{service_fn, Service};
+use hyper::service::service_fn;
 use hyper::{Request, Response};
 use tokio::net::TcpListener;
 
@@ -37,7 +34,7 @@ fn get_config_file_path() -> PathBuf {
 }
 
 fn get_today_as_str() -> String {
-    let dt = Local::today();
+    let dt = Local::now();
     let dt = dt.format("%Y-%m-%d");
     dt.to_string()
 }
@@ -119,7 +116,7 @@ async fn hello(
         "/inlinehms" => get_inlinehms(),
         _ => "not found".to_string(),
     };
-    mk_response(result.into())
+    mk_response(result)
 }
 
 #[tokio::main]
