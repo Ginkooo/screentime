@@ -1,99 +1,141 @@
-mod api;
-mod client;
-mod config;
-mod consts;
-mod daemon;
-mod types;
-mod utils;
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use dirs;
+use jammdb::DB;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::convert::Infallible;
+use std::future::Future;
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, SystemTime};
 
-use crate::config::ScreentimeConfig;
-use chrono::{DateTime, Local};
-use clap::{Parser, ValueEnum};
-use rdev::listen;
-use std::{
-    path::PathBuf,
-    sync::{Arc, RwLock},
-    time::Duration,
-};
-use types::{ThreadSafeUsageTime, UsageTime};
+use active_win_pos_rs::get_active_window;
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::server::conn::http1;
+use hyper::service::{service_fn, Service};
+use hyper::{Request, Response};
+use tokio::net::TcpListener;
 
-/// A screentime monitoring tool. Firstly, start this program with no arguments (daemon mode)
-#[derive(Parser)]
-struct Args {
-    /// Client commands
-    #[arg(value_enum)]
-    command: Option<Command>,
-
-    /// Specify a config path
-    #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
+fn seconds_to_hms(total_seconds: u32) -> String {
+    let hours = total_seconds / 3600;
+    let seconds = total_seconds % 60;
+    let minutes = (total_seconds / 60) - (hours * 60);
+    format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
 }
 
-#[derive(ValueEnum, Clone)]
-pub enum Command {
-    /// Print total screentime in HH:MM:SS format
-    Hms,
-    /// Print total screentime in seconds
-    Total,
-    /// Print a nice-looking summary
-    Summary,
-    /// Print a summary in raw JSON
-    RawSummary,
+type ScreenTime = HashMap<String, u32>;
+
+fn get_config_file_path() -> PathBuf {
+    let mut config_file = dirs::config_dir().unwrap();
+    config_file.push("screentime.db");
+    config_file
 }
 
-fn run_input_event_listener(last_input_time: Arc<RwLock<DateTime<Local>>>) {
-    loop {
-        let last_input_time_clone = last_input_time.clone();
-        if let Err(err) = listen(move |_| {
-            let last = &last_input_time_clone;
-            let mut value = last.write().unwrap();
-            *value = Local::now();
-        }) {
-            eprintln!("{:?}. Retry in a sec...", err);
-            std::thread::sleep(Duration::from_secs(1));
-        }
-    }
+fn get_today_as_str() -> String {
+    let dt = Local::today();
+    let dt = dt.format("%Y-%m-%d");
+    dt.to_string()
 }
 
-fn main() {
-    let args = Args::parse();
-    let config = if let Some(config_path) = args.config {
-        ScreentimeConfig::new(config_path)
+fn update_screentime() {
+    let title = if let Ok(window) = get_active_window() {
+        window.process_name.to_lowercase()
     } else {
-        ScreentimeConfig::default()
+        "unknown".to_string()
     };
 
-    if let Some(command) = args.command {
-        client::handle_client_mode(command, &config);
-        return;
+    let config_file = get_config_file_path();
+
+    let db = DB::open(config_file).unwrap();
+
+    {
+        let tx = db.tx(true).unwrap();
+        tx.get_or_create_bucket("screentime").unwrap();
     }
 
-    utils::create_cache_dir();
-    let snapshot_file_path = utils::get_current_day_snapshot_file_path();
-
-    let bytes = std::fs::read(&snapshot_file_path);
-    let mut usage_time = UsageTime::new();
-
-    if let Ok(bytes) = bytes {
-        let dupa = String::from_utf8(bytes).expect("corrupted screentime file");
-        match serde_json::from_str(dupa.as_str()) {
-            Ok(value) => usage_time = value,
-            Err(_) => {
-                usage_time = UsageTime::new();
-            }
+    let dt = get_today_as_str();
+    let mut screentime: ScreenTime;
+    {
+        let tx = db.tx(false).unwrap();
+        let bucket = tx.get_bucket("screentime").unwrap();
+        if let Some(data) = bucket.get(&dt) {
+            screentime = rmp_serde::from_slice(data.kv().value()).unwrap();
+            *screentime.entry(title).or_insert(0) += 1;
+        } else {
+            screentime = ScreenTime::new();
+            *screentime.entry(title).or_insert(0) += 1;
         }
     }
+    let tx = db.tx(true).unwrap();
+    let bucket = tx.get_or_create_bucket("screentime").unwrap();
+    bucket
+        .put(dt, rmp_serde::to_vec(&screentime).unwrap())
+        .unwrap();
+    tx.commit().unwrap();
+}
 
-    let usage_time: ThreadSafeUsageTime = Arc::new(RwLock::new(usage_time));
-    let last_input_time = Arc::new(RwLock::new(Local::now()));
-    let last_input_time_clone1 = last_input_time.clone();
-    let usage_time_clone_1 = usage_time.clone();
+async fn run_usage_time_updater() {
+    loop {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        update_screentime();
+    }
+}
 
-    std::thread::scope(|scope| {
-        scope.spawn(|| {
-            daemon::run_usage_time_updater(usage_time_clone_1, last_input_time_clone1, &config)
+fn get_inlinehms() -> String {
+    let config_file = get_config_file_path();
+    let dt = get_today_as_str();
+    let db = DB::open(config_file).unwrap();
+    let tx = db.tx(false).unwrap();
+
+    if let Ok(bucket) = tx.get_bucket("screentime") {
+        if let Some(data) = bucket.get(dt) {
+            let screentime: ScreenTime = rmp_serde::from_slice(data.kv().value()).unwrap();
+            let mut result: Vec<String> = screentime
+                .iter()
+                .map(|(k, v)| format!("{}: {}", k, seconds_to_hms(*v)))
+                .collect();
+            result.sort();
+            result.join(" ")
+        } else {
+            "".to_string()
+        }
+    } else {
+        "no data".to_string()
+    }
+}
+
+async fn hello(
+    request: Request<hyper::body::Incoming>,
+) -> Result<Response<Full<Bytes>>, Infallible> {
+    fn mk_response(s: String) -> Result<Response<Full<Bytes>>, Infallible> {
+        Ok(Response::builder().body(Full::new(Bytes::from(s))).unwrap())
+    }
+    let result = match request.uri().to_string().as_str() {
+        "/inlinehms" => get_inlinehms(),
+        _ => "not found".to_string(),
+    };
+    mk_response(result.into())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    tokio::task::spawn(run_usage_time_updater());
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let listener = TcpListener::bind(addr).await?;
+    loop {
+        let (stream, _) = listener.accept().await?;
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(stream, service_fn(hello))
+                .await
+            {
+                println!("Error serving connection: {:?}", err);
+            }
         });
-        scope.spawn(|| api::run_server(usage_time, &config));
-        scope.spawn(|| run_input_event_listener(last_input_time));
-    });
+    }
 }

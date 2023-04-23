@@ -1,31 +1,20 @@
 [package]
 name = "screentime"
-version = "0.2.5"
+version = "0.1.0"
 edition = "2021"
-authors = ["Piotr Czajka <czajka@protonmail.com>"]
-license= "MIT"
-keywords = ["utility", "command-line-tool", "screentime"]
-categories = ["command-line-utilities"]
-description = "A lightweight screentime monitoring tool"
-repository = "https://github.com/Ginkooo/screentime"
-readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.22"
-dirs = "4.0.0"
-rdev = "0.5.1"
-tiny_http = "0.11.0"
-config = { version = "0.13.2", features = ["toml"] }
-tinyget = "1.0.1"
-serde = "1.0.145"
-serde_json = "1.0.86"
-active-win-pos-rs = "0.7.1"
-colored = "2.0.0"
-clap = { version = "4.0.18", features = ["derive"] }
+hyper = { version = "1.0.0-rc.3", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+http-body-util = "0.1.0-rc.2" 
+serde_json = "1.0.96"
+active-win-pos-rs = "0.7"
+dirs = "5.0.0"
+jammdb = "0.9.0"
+serde = { version = "1.0.160", features = ["derive"] }
+chrono = "0.4.24"
+rmp-serde = "1.1.1"
+rdev = "0.5.2"
 
-[profile.release]
-strip = true
-lto = false
-opt-level = 'z'
