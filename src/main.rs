@@ -1,22 +1,20 @@
+use axum::Router;
 use chrono::Local;
 
 use jammdb::DB;
 
+use mockall::automock;
 use std::collections::HashMap;
-use std::convert::Infallible;
 
-use std::net::SocketAddr;
+use axum::routing::get;
+
 use std::path::PathBuf;
 
+use mockall::predicate::*;
+use mockall::*;
 use std::time::Duration;
 
 use active_win_pos_rs::get_active_window;
-use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::{Request, Response};
-use tokio::net::TcpListener;
 
 fn seconds_to_hms(total_seconds: u32) -> String {
     let hours = total_seconds / 3600;
@@ -27,11 +25,18 @@ fn seconds_to_hms(total_seconds: u32) -> String {
 
 type ScreenTime = HashMap<String, u32>;
 
-fn get_config_file_path() -> PathBuf {
-    let mut config_file = dirs::config_dir().unwrap();
-    config_file.push("screentime.db");
-    config_file
+#[automock]
+trait ConfigGetter {
+    fn get_config_file_path() -> PathBuf {
+        let mut config_file = dirs::config_dir().unwrap();
+        config_file.push("screentime.db");
+        config_file
+    }
 }
+
+struct Config {}
+
+impl ConfigGetter for Config {}
 
 fn get_today_as_str() -> String {
     let dt = Local::now();
@@ -46,7 +51,7 @@ fn update_screentime() {
         "unknown".to_string()
     };
 
-    let config_file = get_config_file_path();
+    let config_file = Config::get_config_file_path();
 
     let db = DB::open(config_file).unwrap();
 
@@ -83,8 +88,8 @@ async fn run_usage_time_updater() {
     }
 }
 
-fn get_inlinehms() -> String {
-    let config_file = get_config_file_path();
+async fn get_inlinehms() -> String {
+    let config_file = Config::get_config_file_path();
     let dt = get_today_as_str();
     let db = DB::open(config_file).unwrap();
     let tx = db.tx(false).unwrap();
@@ -97,7 +102,11 @@ fn get_inlinehms() -> String {
                 .map(|(k, v)| format!("{}: {}", k, seconds_to_hms(*v)))
                 .collect();
             result.sort();
-            result.join(" ")
+            let total = format!(
+                "total: {}",
+                seconds_to_hms(screentime.values().sum::<u32>())
+            );
+            format!("{} {}", total, result.join(" "))
         } else {
             "".to_string()
         }
@@ -106,33 +115,27 @@ fn get_inlinehms() -> String {
     }
 }
 
-async fn hello(
-    request: Request<hyper::body::Incoming>,
-) -> Result<Response<Full<Bytes>>, Infallible> {
-    fn mk_response(s: String) -> Result<Response<Full<Bytes>>, Infallible> {
-        Ok(Response::builder().body(Full::new(Bytes::from(s))).unwrap())
-    }
-    let result = match request.uri().to_string().as_str() {
-        "/inlinehms" => get_inlinehms(),
-        _ => "not found".to_string(),
-    };
-    mk_response(result)
+fn build_router() -> Router {
+    Router::new().route("/inlinehms", get(get_inlinehms))
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() {
     tokio::task::spawn(run_usage_time_updater());
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    let listener = TcpListener::bind(addr).await?;
-    loop {
-        let (stream, _) = listener.accept().await?;
-        tokio::task::spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(stream, service_fn(hello))
-                .await
-            {
-                println!("Error serving connection: {:?}", err);
-            }
-        });
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, build_router()).await.unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn test_it_works() {
+        use axum_test_helper::TestClient;
+
+        let client = TestClient::new(crate::build_router());
+
+        let resp = client.get("/inlinehms").send().await;
+        dbg!(resp.text().await);
     }
 }
