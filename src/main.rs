@@ -10,7 +10,6 @@ use axum::routing::get;
 
 use std::path::PathBuf;
 
-
 use mockall::predicate::*;
 use std::time::Duration;
 
@@ -131,11 +130,10 @@ mod tests {
     use std::path::PathBuf;
 
     use anyhow::Result;
-    
-    
+
     use rstest::fixture;
     use rstest::rstest;
-    use tempfile::{TempDir};
+    use tempfile::TempDir;
 
     use crate::MockConfig;
 
