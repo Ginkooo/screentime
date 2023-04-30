@@ -1,9 +1,10 @@
-use axum::Router;
-use chrono::Local;
+use axum::{extract::Request, Router};
+use chrono::{DateTime, Duration, Local, Utc};
 
 use jammdb::DB;
 
 use mockall::automock;
+use single_value_channel::{Receiver, Updater};
 use std::collections::HashMap;
 
 use axum::routing::get;
@@ -11,7 +12,6 @@ use axum::routing::get;
 use std::path::PathBuf;
 
 use mockall::predicate::*;
-use std::time::Duration;
 
 use active_win_pos_rs::get_active_window;
 
@@ -41,14 +41,29 @@ fn get_today_as_str() -> String {
     dt.to_string()
 }
 
-fn update_screentime() {
-    let title = if let Ok(window) = get_active_window() {
-        window.process_name.to_lowercase()
+fn get_focused_program_name() -> String {
+    if let Ok(window) = get_active_window() {
+        let process_name = window.process_name.to_lowercase();
+        let title = window.title;
+        if title.to_lowercase().starts_with("vim") || title.to_lowercase().starts_with("nvim") {
+            title.split(" ").nth(0).unwrap().to_string()
+        } else {
+            process_name
+        }
     } else {
         "unknown".to_string()
-    };
+    }
+}
+
+fn update_screentime(rx: &mut Receiver<DateTime<Utc>>) {
+    let title = get_focused_program_name();
 
     let config_file = Config::get_screentime_file_path();
+
+    let now = Utc::now();
+    if now - *rx.latest() > Duration::seconds(30) {
+        return;
+    }
 
     let db = DB::open(config_file).unwrap();
 
@@ -79,10 +94,17 @@ fn update_screentime() {
     tx.commit().unwrap();
 }
 
-async fn run_usage_time_updater() {
+async fn run_last_usage_time_updater(tx: Updater<DateTime<Utc>>) {
+    rdev::listen(move |_| {
+        tx.update(Utc::now()).unwrap();
+    })
+    .unwrap();
+}
+
+async fn run_screentime_updater(mut rx: Receiver<DateTime<Utc>>) {
     loop {
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        update_screentime();
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        update_screentime(&mut rx);
     }
 }
 
@@ -114,12 +136,14 @@ async fn get_inlinehms() -> String {
 }
 
 fn build_router() -> Router {
-    Router::new().route("/inlinehms", get(get_inlinehms))
+    Router::new().route("/inlinehms", get(&get_inlinehms))
 }
 
 #[tokio::main]
 async fn main() {
-    tokio::task::spawn(run_usage_time_updater());
+    let (rx, tx) = single_value_channel::channel_starting_with(Utc::now());
+    tokio::task::spawn(run_screentime_updater(rx));
+    tokio::task::spawn(run_last_usage_time_updater(tx));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8465").await.unwrap();
     axum::serve(listener, build_router()).await.unwrap();
