@@ -39,3 +39,15 @@ pub fn seconds_to_hms(total_seconds: u32) -> String {
     let minutes = (total_seconds / 60) - (hours * 60);
     format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::seconds_to_hms;
+
+    #[test]
+    fn test_seconds_to_hms() {
+        assert_eq!(seconds_to_hms(3600), "01:00:00");
+        assert_eq!(seconds_to_hms(2400), "00:40:00");
+        assert_eq!(seconds_to_hms(4325), "01:12:05");
+    }
+}
