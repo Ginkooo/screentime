@@ -35,7 +35,7 @@ pub fn get_focused_program_name() -> String {
             process_name.into_string().unwrap()
         }
     } else {
-        "unknown".to_string()
+        "desktop".to_string()
     }
 }
 
