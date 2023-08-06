@@ -6,22 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-http-body-util = "0.1.0-rc.2" 
-serde_json = "1.0.96"
-active-win-pos-rs = "0.7"
-dirs = "5.0.0"
-jammdb = "0.9.0"
-serde = { version = "1.0.160", features = ["derive"] }
-chrono = "0.4.24"
-rmp-serde = "1.1.1"
-rdev = "0.5.2"
-single_value_channel = "1.2.2"
-axum = { git = "https://github.com/tokio-rs/axum" }
-axum-test-helper = "0.2.0"
-mockall = "0.11.4"
-rstest = "0.17.0"
-tempfile = "3.5.0"
-anyhow = "1.0.70"
-mockall_double = "0.3.0"
-egui = "0.21.0"
+tokio = { version = "*", features = ["full"] }
+serde_json = "*"
+active-win-pos-rs = "*"
+dirs = "*"
+jammdb = "*"
+serde = { version = "*", features = ["derive"] }
+chrono = "*"
+rmp-serde = "*"
+rdev = "*"
+single_value_channel = "*"
+axum = "*"
+axum-test-helper = "*"
+mockall = "*"
+rstest = "*"
+tempfile = "*"
+anyhow = "*"
+mockall_double = "*"

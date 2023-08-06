@@ -7,7 +7,7 @@ mod utils;
 use axum::Router;
 use chrono::Utc;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, net::SocketAddr, str::FromStr};
 
 use axum::routing::get;
 
@@ -22,13 +22,15 @@ fn build_router() -> Router {
 #[tokio::main]
 async fn main() {
     if std::env::args().nth(1).unwrap_or("missing".into()) != "-d".to_string() {
-        client::run_client();
+        client::execute(std::env::args().skip(1).collect());
         return;
     }
     let (rx, tx) = single_value_channel::channel_starting_with(Utc::now());
     tokio::task::spawn(screentime_updater::run_screentime_updater(rx));
     tokio::task::spawn(last_usage_time::run_last_usage_time_updater(tx));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8465").await.unwrap();
-    axum::serve(listener, build_router()).await.unwrap();
+    axum::Server::bind(&SocketAddr::from_str("0.0.0.0:8645").unwrap())
+        .serve(build_router().into_make_service())
+        .await
+        .unwrap();
 }
