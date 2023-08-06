@@ -9,8 +9,9 @@ A CLI screentime monitoring tool. Shows how much time are you using certain apps
 Or:
 
 `screentime hms 2023-08-30` to get a terminal output like:
-
+```
 desktop:  00:00:03
 alacritty: ....... 00:07:44
 firefox: ...................... 00:22:35
 vim: ......................................... 00:41:00
+```
