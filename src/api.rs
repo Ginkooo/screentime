@@ -1,6 +1,6 @@
 use jammdb::DB;
 
-use crate::{screentime_updater, utils};
+use crate::{utils};
 
 use crate::{utils::Config, ScreenTime};
 
