@@ -30,7 +30,7 @@ pub fn get_focused_program_name() -> String {
 
         let title = window.title;
         if title.to_lowercase().starts_with("vim") || title.to_lowercase().starts_with("nvim") {
-            title.split(" ").nth(0).unwrap().to_string()
+            title.split(' ').next().unwrap().to_string()
         } else {
             process_name.into_string().unwrap()
         }

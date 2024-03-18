@@ -15,13 +15,13 @@ type ScreenTime = HashMap<String, u32>;
 
 fn build_router() -> Router {
     Router::new()
-        .route("/inlinehms", get(&api::get_inlinehms))
-        .route("/json", get(&api::get_json_secs))
+        .route("/inlinehms", get(api::get_inlinehms))
+        .route("/json", get(api::get_json_secs))
 }
 
 #[tokio::main]
 async fn main() {
-    if std::env::args().nth(1).unwrap_or("missing".into()) != "-d".to_string() {
+    if std::env::args().nth(1).unwrap_or("missing".into()) != *"-d" {
         client::execute(std::env::args().skip(1).collect());
         return;
     }

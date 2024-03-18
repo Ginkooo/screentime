@@ -29,7 +29,7 @@ pub fn execute(args: Vec<String>) {
 
 fn draw_screentime(date: NaiveDate) {
     let config = Config::get_screentime_file_path();
-    let db = DB::open(&config).unwrap();
+    let db = DB::open(config).unwrap();
     let tx = db.tx(false).unwrap();
     let bucket = tx.get_bucket("screentime").unwrap();
     let screentime = if let Some(data) = bucket.get(&date.to_string()) {
